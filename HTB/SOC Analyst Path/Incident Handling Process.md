@@ -156,3 +156,76 @@ Here are the bullet points summarizing the information:
 ## User Awareness Training
 
 Training users to recognize suspicious behavior and report it when discovered is a big win for us. While it is unlikely to reach 100% success on this task, these trainings are known to significantly reduce the number of successful compromises. Periodic "surprise" testing should also be part of this training, including, for example, monthly phishing emails, dropped USB sticks in the office building, etc.
+
+
+The `detection & analysis` phase involves all aspects of detecting an incident, such as utilizing sensors, logs, and trained personnel. It also includes information and knowledge sharing, as well as utilizing context-based threat intelligence. Segmentation of the architecture and having a clear understanding of and visibility within the network are also important factors.
+
+Threats are introduced to the organization via an infinite amount of attack vectors, and their detection can come from sources such as:
+
+- An employee that notices abnormal behavior
+- An alert from one of our tools (EDR, IDS, Firewall, SIEM, etc.)
+- Threat hunting activities
+- A third-party notification informing us that they discovered signs of our organization being compromised
+
+---
+
+It is highly recommended to create levels of detection by logically categorizing our network as follows.
+
+- Detection at the network perimeter (using firewalls, internet-facing network intrusion detection/prevention systems, demilitarized zone, etc.)
+- Detection at the internal network level (using local firewalls, host intrusion detection/prevention systems, etc.)
+- Detection at the endpoint level (using antivirus systems, endpoint detection & response systems, etc.)
+- Detection at the application level (using application logs, service logs, etc.)
+
+## Initial Investigation
+
+When a security incident is detected, you should conduct some initial investigation and establish context before assembling the team and calling an organization-wide incident response. Think about how information is presented in the event of an administrative account connecting to an IP address at HH:MM:SS. 
+Without knowing what system is on that IP address and which time zone the time refers to, we may easily jump to a wrong conclusion about what this event is about. To sum up, we should aim to collect as much information as possible at this stage about the following:
+
+- Date/Time when the incident was reported. Additionally, who detected the incident and/or who reported it?
+- How was the incident detected?
+- What was the incident? Phishing? System unavailability? etc.
+- Assemble a list of impacted systems (if relevant)
+- Document who has accessed the impacted systems and what actions have been taken. Make a note of whether this is an ongoing incident or the suspicious activity has been stopped
+- Physical location, operating systems, IP addresses and hostnames, system owner, system's purpose, current state of the system
+- (If malware is involved) List of IP addresses, time and date of detection, type of malware, systems impacted, export of malicious files with forensic information on them (such as hashes, copies of the files, etc.)
+
+## Incident Severity & Extent Questions
+
+When handling a security incident, we should also try to answer the following questions to get an idea of the incident's severity and extent:
+
+- What is the exploitation impact?
+- What are the exploitation requirements?
+- Can any business-critical systems be affected by the incident?
+- Are there any suggested remediation steps?
+- How many systems have been impacted?
+- Is the exploit being used in the wild?
+- Does the exploit have any worm-like capabilities?
+The last two can possibly indicate the level of sophistication of an adversary.
+
+To leverage IOCs, we will have to deploy an IOC-obtaining/IOC-searching tool (native or third party and possibly at scale). A common approach is to utilize WMI or PowerShell for IOC-related operations in Windows environments. A word of caution! During an investigation, we have to be extra careful to prevent the credentials of our highly privileged user(s) from being cached when connecting to (potentially) compromised systems (or any systems, really). More specifically, we need to ensure that only connection protocols and tools that don't cache credentials upon a successful login are utilized (such as WinRM). Windows logons with logon type 3 (Network Logon) typically don't cache credentials on the remote systems. The best example of "know your tools" that comes to mind is "PsExec". When "PsExec" is used with explicit credentials, those credentials are cached on the remote machine. When "PsExec" is used without credentials through the session of the currently logged on user, the credentials are not cached on the remote machine. This is a great example of demonstrating how the same tool leaves different tracks, so be aware.
+
+## Containment
+
+In this stage, we take action to prevent the spread of the incident. We divide the actions into `short-term containment` and `long-term containment`. It is important that containment actions are coordinated and executed across all systems simultaneously. Otherwise, we risk notifying attackers that we are after them, in which case they might change their techniques and tools in order to persist in the environment.
+
+In short-term containment, the actions taken leave a minimal footprint on the systems on which they occur. Some of these actions can include, placing a system in a separate/isolated VLAN, pulling the network cable out of the system(s) or modifying the attacker's C2 DNS name to a system under our control or to a non-existing one. The actions here contain the damage and provide time to develop a more concrete remediation strategy. Additionally, since we keep the systems unaltered (as much as possible), we have the opportunity to take forensic images and preserve evidence if this wasn't already done during the investigation (this is also known as the `backup` substage of the containment stage). If a short-term containment action requires shutting down a system, we have to ensure that this is communicated to the business and appropriate permissions are granted.
+
+In long-term containment actions, we focus on persistent actions and changes. These can include changing user passwords, applying firewall rules, inserting a host intrusion detection system, applying a system patch, and shutting down systems. While doing these activities, we should keep the business and the relevant stakeholders updated. Bear in mind that just because a system is now patched does not mean that the incident is over. Eradication, recovery, and post-incident activities are still pending.
+
+---
+
+## Eradication
+
+Once the incident is contained, eradication is necessary to eliminate both the root cause of the incident and what is left of it to ensure that the adversary is out of the systems and network. Some of the activities in this stage include removing the detected malware from systems, rebuilding some systems, and restoring others from backup. During the eradication stage, we may extend the previously performed containment activities by applying additional patches, which were not immediately required. Additional system-hardening activities are often performed during the eradication stage (not only on the impacted system but across the network in some cases).
+
+---
+
+## Recovery
+
+In the recovery stage, we bring systems back to normal operation. Of course, the business needs to verify that a system is in fact working as expected and that it contains all the necessary data. When everything is verified, these systems are brought into the production environment. All restored systems will be subject to heavy logging and monitoring after an incident, as compromised systems tend to be targets again if the adversary regains access to the environment in a short period of time. Typical suspicious events to monitor for are:
+
+- Unusual logons (e.g. user or service accounts that have never logged in there before)
+- Unusual processes
+- Changes to the registry in locations that are usually modified by malware
+
+The recovery stage in some large incidents may take months, since it is often approached in phases. During the early phases, the focus is on increasing overall security to prevent future incidents through quick wins and the elimination of low-hanging fruits. The later phases focus on permanent, long-term changes to keep the organization as secure as possible.
